@@ -11,6 +11,7 @@ from constants import bot_invite_link
 from utils.logging import log_user_code
 
 EXECUTE_URL = config("EXECUTION_API_URL")
+API_TOKEN = config("API_TOKEN")
 
 LANG_ALIASES = {
     "py": "python",
@@ -18,7 +19,11 @@ LANG_ALIASES = {
     "js": "javascript",
     "javascript": "javascript",
     "java": "java",
+    "cpp": "cpp",
+    "c++": "cpp",
 }
+
+PRO_LANGS = {"cpp"}
 
 
 def build_view():
@@ -85,8 +90,10 @@ class SandboxExec(commands.Cog):
             "language": language,
             "code": code,
         }
+        
+        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {API_TOKEN}"}
 
-        async with self.session.post(EXECUTE_URL, json=payload, timeout=30) as resp:
+        async with self.session.post(EXECUTE_URL, json=payload, headers=headers, timeout=30) as resp:
             if resp.status == 429:
                 return {
                     "code": -1,
@@ -216,10 +223,19 @@ class SandboxExec(commands.Cog):
         lang = LANG_ALIASES.get(lang)
 
         if not lang:
-            await message.channel.send(
+            return await message.channel.send(
                 embed=failure("Unsupported language: Use `python`, `javascript` or `java`.")
             )
-            return
+
+        if lang in PRO_LANGS:
+            if not self.bot.runtime.is_pro_enabled(message.guild.id):
+                return await message.channel.send(
+                embed=info(
+                    f"<:pro:1503090301001011340> **Pro** required to execute `{lang}` code\n\n"
+                    f"-# **Pro** is not a paid feature. Some languages require elevated permission to execute.\n"
+                    f"-# You may request access stating your use case in our support server.", self.bot.user, ""
+                )
+            )
 
         async with message.channel.typing():
             try:
@@ -280,6 +296,10 @@ class SandboxExec(commands.Cog):
         if not lang:
             return
 
+        if lang in PRO_LANGS:
+            if not self.bot.runtime.is_pro_enabled(after.guild.id):
+                return
+
         async with after.channel.typing():
             try:
                 result = await self._execute(lang, code)
@@ -329,7 +349,7 @@ class SandboxExec(commands.Cog):
             "/run\n\\`\\`\\`<language>\n"
             "print(1 + 1)\n"
             "\\`\\`\\`\n\n"
-            "Language support: **python**, **javascript**, **java** (**py**,**js** also works)\n"
+            "Language support: **python**, **javascript**, **java**, **C++** (**py**,**js**,**cpp** also works)\n"
             "### Examples\n"
             "**Python:**\n\n"
             "/run ```python\n"
