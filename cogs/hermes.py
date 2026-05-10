@@ -349,7 +349,7 @@ class SandboxExec(commands.Cog):
             "/run\n\\`\\`\\`<language>\n"
             "print(1 + 1)\n"
             "\\`\\`\\`\n\n"
-            "**Languages supported: **"
+            "**Languages supported: **\n"
             " - python\n"
             " - javascript\n"
             " - java\n"
