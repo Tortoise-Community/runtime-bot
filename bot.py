@@ -25,7 +25,8 @@ class MyBot(commands.Bot):
             intents=intents,
             max_messages=0,
             member_cache_flags=discord.MemberCacheFlags.none(),
-            chunk_guilds_at_startup=False
+            chunk_guilds_at_startup=False,
+            help_command=None
         )
 
         self.db = Database(DB_URL)

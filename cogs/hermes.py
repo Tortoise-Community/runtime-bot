@@ -313,6 +313,14 @@ class SandboxExec(commands.Cog):
                 )
             )
 
+    @commands.command()
+    async def help(self, ctx: commands.Context):
+        await ctx.send(
+            embed=info(
+                "Commands have moved to slash commands. Use `/run_help` for more info.", self.bot.user,""
+            )
+        )
+
     @app_commands.command(name="run_help", description="Show how to run code with the execution bot")
     async def run_help(self, interaction: discord.Interaction):
         content = (
