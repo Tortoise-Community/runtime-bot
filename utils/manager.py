@@ -20,6 +20,7 @@ class Database:
 class RuntimeConfig:
     enabled: bool = True
     last_promoted: datetime | None = None
+    pro: bool = False
 
 
 class RuntimeManager:
@@ -33,25 +34,30 @@ class RuntimeManager:
             CREATE TABLE IF NOT EXISTS runtime_config (
                 guild_id BIGINT PRIMARY KEY,
                 enabled  BOOLEAN NOT NULL DEFAULT TRUE,
-                last_promoted TIMESTAMPTZ NULL
+                last_promoted TIMESTAMPTZ NULL,
+                pro BOOLEAN NOT NULL DEFAULT FALSE
             )
             """
         )
 
     async def load_cache(self):
         rows = await self.db.pool.fetch(
-            "SELECT guild_id, enabled, last_promoted FROM runtime_config"
+            "SELECT guild_id, enabled, last_promoted, pro FROM runtime_config"
         )
         self.cache = {
             r["guild_id"]: RuntimeConfig(
                 enabled=r["enabled"],
-                last_promoted=r["last_promoted"]
+                last_promoted=r["last_promoted"],
+                pro=r["pro"]
             )
             for r in rows
         }
 
     def is_enabled(self, guild_id: int) -> bool:
         return self.cache.get(guild_id, RuntimeConfig()).enabled
+
+    def is_pro_enabled(self, guild_id: int) -> bool:
+        return self.cache.get(guild_id, RuntimeConfig()).pro
 
     def get_last_promoted(self, guild_id: int):
         return self.cache.get(guild_id, RuntimeConfig()).last_promoted
@@ -69,6 +75,21 @@ class RuntimeManager:
         )
         config = self.cache.setdefault(guild_id, RuntimeConfig())
         config.enabled = value
+
+    async def set_pro(self, guild_id: int, value: bool):
+        await self.db.pool.execute(
+            """
+            INSERT INTO runtime_config (guild_id, pro)
+            VALUES ($1, $2)
+            ON CONFLICT (guild_id)
+            DO UPDATE SET pro = EXCLUDED.pro
+            """,
+            guild_id,
+            value,
+        )
+
+        config = self.cache.setdefault(guild_id, RuntimeConfig())
+        config.pro = value
 
     async def set_last_promoted(self, guild_id: int, timestamp):
         await self.db.pool.execute(

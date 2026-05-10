@@ -5,7 +5,7 @@ from discord import app_commands
 
 from utils.checks import tortoise_bot_developer_only
 from constants import tortoise_guild_id
-from utils.embed_handler import success, failure
+from utils.embed_handler import success, failure, info
 
 
 class BroadcastModal(discord.ui.Modal, title="Send Embed"):
@@ -256,6 +256,70 @@ class MasterCog(commands.Cog):
                 await interaction.followup.send(embed=failure("Left guild, but failed to send message."))
         except Exception as e:
             await interaction.followup.send(embed=failure(f"Failed to leave guild: {e}"))
+
+    @master_group.command(name="give_pro", description="Grant pro access to a guild")
+    @app_commands.check(tortoise_bot_developer_only)
+    @app_commands.describe(guild_id="Target guild ID")
+    async def give_pro(self, interaction: discord.Interaction, guild_id: str):
+        await interaction.response.defer(ephemeral=True)
+
+        try:
+            guild_id = int(guild_id)
+        except ValueError:
+            await interaction.followup.send(embed=failure("Invalid guild ID."))
+            return
+
+        guild = self.bot.get_guild(guild_id)
+        if not guild:
+            await interaction.followup.send(embed=failure("Guild not found."))
+            return
+
+        await self.bot.runtime.set_pro(guild_id, True)
+
+        embed = info(
+                "This server has been given **Pro access**.\n\n"
+                "This is **not a paid feature**. The bot is completely free for everyone.\n"
+                "Some language execution features require elevated permissions, which is why Pro exists.\n\n"
+                "You now have access to those extended capabilities.",
+                self.bot.user,
+            "<:pro:1503090301001011340> Pro Access Enabled",
+            "Tortoise Programming Community"
+        )
+
+        sent = False
+        if guild.system_channel:
+            try:
+                await guild.system_channel.send(embed=embed)
+                sent = True
+            except:
+                pass
+
+        await interaction.followup.send(
+            embed=success("Pro granted." + (" Notification sent." if sent else " Could not send notification."))
+        )
+
+    @master_group.command(name="remove_pro", description="Remove pro access from a guild")
+    @app_commands.check(tortoise_bot_developer_only)
+    @app_commands.describe(guild_id="Target guild ID")
+    async def remove_pro(self, interaction: discord.Interaction, guild_id: str):
+        await interaction.response.defer(ephemeral=True)
+
+        try:
+            guild_id = int(guild_id)
+        except ValueError:
+            await interaction.followup.send(embed=failure("Invalid guild ID."))
+            return
+
+        guild = self.bot.get_guild(guild_id)
+        if not guild:
+            await interaction.followup.send(embed=failure("Guild not found."))
+            return
+
+        await self.bot.runtime.set_pro(guild_id, False)
+
+        await interaction.followup.send(
+            embed=success("Pro removed.")
+        )
 
 
 async def setup(bot: commands.Bot):
