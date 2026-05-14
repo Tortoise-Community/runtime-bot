@@ -46,7 +46,7 @@ class MyBot(commands.Bot):
         await self.load_extension("cogs.hermes")
         await self.load_extension("cogs.logger")
         await self.load_extension("cogs.master")
-        await self.load_extension("cogs.health")
+        # await self.load_extension("cogs.health")
 
         await self.tree.sync()
         try:
