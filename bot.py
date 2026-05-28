@@ -21,7 +21,7 @@ class MyBot(commands.Bot):
         intents.message_content = True
 
         super().__init__(
-            command_prefix="!",
+            command_prefix=None,
             intents=intents,
             max_messages=0,
             member_cache_flags=discord.MemberCacheFlags.none(),
@@ -33,6 +33,7 @@ class MyBot(commands.Bot):
         self.runtime: RuntimeManager | None = None
         self.build_version = None
         self.maintenance_mode = False
+        self.dev_mode = False
 
     async def setup_hook(self):
 
@@ -52,6 +53,7 @@ class MyBot(commands.Bot):
         try:
             await self.tree.sync(guild=discord.Object(id=tortoise_guild_id))
         except discord.errors.Forbidden:
+            self.dev_mode = True
             print("⚙️ Development mode active")
 
         print("✅ Synced application commands")

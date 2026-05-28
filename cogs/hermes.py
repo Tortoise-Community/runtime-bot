@@ -124,6 +124,7 @@ class SandboxExec(commands.Cog):
         exit_code = result.get("code")
         stdout = result.get("output", "") or ""
         stderr = result.get("std_log", "") or ""
+        time_ms = result.get("time_ms", 0) or 0
 
         combined = stdout
         if exit_code != 0 and stderr:
@@ -135,7 +136,7 @@ class SandboxExec(commands.Cog):
         if len(combined) > 1900:
             combined = combined[:1900] + "\n... (truncated)"
 
-        return exit_code, combined
+        return exit_code, combined, time_ms
 
     async def _send_result(
         self,
@@ -146,7 +147,7 @@ class SandboxExec(commands.Cog):
         edited: bool = False,
         target_message: discord.Message | None = None,
     ):
-        exit_code, output = self._build_output(result)
+        exit_code, output, _ = self._build_output(result)
 
         if result.get("rate_limited") or result.get("maintenance") or result.get("unavailable"):
             embed = failure(result.get("std_log"))
@@ -208,12 +209,13 @@ class SandboxExec(commands.Cog):
         if message.author.bot or not message.guild:
             return
 
-        if not self.bot.runtime.is_enabled(message.guild.id):
-            return
+        if not self.bot.dev_mode:
+            if not self.bot.runtime.is_enabled(message.guild.id):
+                return
 
-        if self.bot.maintenance_mode:
-            await message.channel.send(embed=failure("Bot is under maintenance. Please try again later."))
-            return
+            if self.bot.maintenance_mode:
+                await message.channel.send(embed=failure("Bot is under maintenance. Please try again later."))
+                return
 
         parsed = self._parse_block(message.content)
         if not parsed:
@@ -245,8 +247,11 @@ class SandboxExec(commands.Cog):
                 return
 
             if minimal:
-                exit_code, output = self._build_output(result)
-                await message.channel.send(content=f"```ex\n{output}\n```")
+                exit_code, output, time_ms = self._build_output(result)
+                await message.channel.send(
+                    content=f"{message.author.mention} Your output for `{lang}` code"
+                            f"\n```ex\n{output}\n```"
+                            f"\n-# Exit code: {exit_code}  |  Ran in {time_ms:.2f} ms.")
                 return
 
             bot_msg = await self._send_result(
@@ -312,8 +317,12 @@ class SandboxExec(commands.Cog):
                 return
 
             if minimal:
-                exit_code, output = self._build_output(result)
-                await bot_msg.edit(content=f"```ex\n{output}\n```")
+                exit_code, output, time_ms = self._build_output(result)
+                await bot_msg.edit(
+                    content=f"{after.author.mention} Your output for `{lang}` code"
+                            f"\n```ex\n{output}\n```"
+                            f"\n-# Exit code: {exit_code}  |  Ran in {time_ms:.2f} ms."
+                )
                 return
 
             await self._send_result(
