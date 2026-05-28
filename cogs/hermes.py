@@ -251,7 +251,7 @@ class SandboxExec(commands.Cog):
                 await message.channel.send(
                     content=f"{message.author.mention} Your output for `{lang}` code"
                             f"\n```ex\n{output}\n```"
-                            f"\n-# Exit code: {exit_code}  |  Ran in {time_ms:.2f} ms.")
+                            f"\n-# Exit code: {exit_code}  ✦  Time: {time_ms:.2f} ms.")
                 return
 
             bot_msg = await self._send_result(
@@ -321,7 +321,7 @@ class SandboxExec(commands.Cog):
                 await bot_msg.edit(
                     content=f"{after.author.mention} Your output for `{lang}` code"
                             f"\n```ex\n{output}\n```"
-                            f"\n-# Exit code: {exit_code}  |  Ran in {time_ms:.2f} ms."
+                            f"\n-# Exit code: {exit_code}  ✦  Time: {time_ms:.2f} ms."
                 )
                 return
 
