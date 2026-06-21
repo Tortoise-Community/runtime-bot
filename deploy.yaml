@@ -26,7 +26,7 @@
     - name: EXECUTION_API_URL
       prompt: "Enter Hermes API url"
       private: no
-      default: "http://hermes-engine:8000/execute/"
+      default: "http://hermes-engine.web:8000/execute/"
 
     - name: API_TOKEN
       prompt: "Enter Hermes API token"
