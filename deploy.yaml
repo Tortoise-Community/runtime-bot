@@ -1,0 +1,127 @@
+---
+- name: Deploy runtime-bot to dokku
+  hosts: server1
+  become: yes
+  become_method: su
+  become_user: root
+  vars_prompt:
+    - name: APP_NAME
+      prompt: "Enter your app name"
+      private: no
+      default: "runtime-bot"
+
+    - name: NETWORK_NAME
+      prompt: "Enter internal network name to use"
+      private: no
+      default: "hermes-internal"
+
+    - name: DISCORD_BOT_TOKEN
+      prompt: "Enter your DISCORD_TOKEN"
+      private: yes
+
+    - name: DATABASE_URL
+      prompt: "Enter postgres database url"
+      private: yes
+
+    - name: EXECUTION_API_URL
+      prompt: "Enter Hermes API url"
+      private: no
+      default: "http://hermes-engine:8000/execute/"
+
+    - name: API_TOKEN
+      prompt: "Enter Hermes API token"
+      private: yes
+
+    - name: NEW_RELIC_LICENSE_KEY
+      prompt: "Enter your new relic key"
+      private: yes
+
+    - name: CPU_LIMIT
+      prompt: "Enter CPU core limit"
+      private: no
+      default: "0.5"
+
+    - name: MEMORY_LIMIT
+      prompt: "Enter memory (GB) limit"
+      private: no
+      default: "1"
+
+    - name: ssh_email
+      prompt: "Enter email address for SSH key"
+      private: no
+
+#    - name: HOST
+#      prompt: "Enter HOST"
+#      private: no
+#      default: "0.0.0.0"
+#
+#    - name: PORT
+#      prompt: "Enter PORT"
+#      private: no
+#      default: "8000"
+
+  tasks:
+    - name: Validate user inputs
+      ansible.builtin.assert:
+        that:
+          - CPU_LIMIT is match('^[0-9]+(\.[0-9]+)?$')
+          - MEMORY_LIMIT is match('^[0-9]+(\.[0-9]+)?$')
+        fail_msg: >-
+          Validation failed! Please review your input rules:
+          - CPU_LIMIT must be a positive number
+          - MEMORY_LIMIT must be a positive number
+        success_msg: "All inputs are correctly formatted and ready for deployment."
+
+
+    - name: Create Dokku app {{APP_NAME}}
+      command: dokku apps:create {{APP_NAME}}
+      args:
+        creates: /home/dokku/{{APP_NAME}}
+
+    - name: Set environment variables in Dokku
+      command: dokku config:set {{APP_NAME}}
+        DISCORD_BOT_TOKEN="{{ DISCORD_BOT_TOKEN }}"
+        DATABASE_URL="{{ DATABASE_URL }}"
+        NEW_RELIC_LICENSE_KEY="{{ NEW_RELIC_LICENSE_KEY }}"
+        EXECUTION_API_URL="{{ EXECUTION_API_URL }}"
+        API_TOKEN="{{ API_TOKEN }}"
+
+    - name: Set runtime resource limits
+      command: "dokku resource:limit {{ APP_NAME }} --cpu {{CPU_LIMIT}} --memory {{MEMORY_LIMIT}}g --memory-swap {{MEMORY_LIMIT}}g"
+
+    - name: Attach app to internal Docker network
+      command: dokku network:set {{ APP_NAME }} attach-post-create {{ NETWORK_NAME }}
+
+    - name: Generate SSH key on the server
+      command: ssh-keygen -t rsa -b 4096 -C "{{ ssh_email }}" -f "{{ ansible_env.HOME }}/id_rsa_{{ APP_NAME }}" -N ""
+      args:
+        creates: "{{ ansible_env.HOME }}/id_rsa_{{ APP_NAME }}"
+
+    - name: Add the public key to Dokku for github actions
+      command: "dokku ssh-keys:add github-actions-{{ APP_NAME }} {{ ansible_env.HOME }}/id_rsa_{{ APP_NAME }}.pub"
+
+    - name: Read private key from server
+      slurp:
+        src: "{{ ansible_env.HOME }}/id_rsa_{{ APP_NAME }}"
+      register: server_private_key
+
+    - name: Get app config
+      command: dokku config:show {{APP_NAME}}
+      register: app_config
+      changed_when: false
+
+    - name: Print app config
+      debug:
+        msg: "{{ app_config.stdout_lines }}"
+
+    - name: Save private key locally for easy copying
+      copy:
+        content: "{{ server_private_key.content | b64decode }}"
+        dest: "./github_actions_key_{{ APP_NAME }}.pem"
+      delegate_to: localhost
+      become: no
+
+    - name: Clear configs
+      set_fact:
+        app_config: ""
+        server_private_key: ""

@@ -147,7 +147,7 @@ class SandboxExec(commands.Cog):
         edited: bool = False,
         target_message: discord.Message | None = None,
     ):
-        exit_code, output, _ = self._build_output(result)
+        exit_code, output, time_ms = self._build_output(result)
 
         if result.get("rate_limited") or result.get("maintenance") or result.get("unavailable"):
             embed = failure(result.get("std_log"))
@@ -160,10 +160,13 @@ class SandboxExec(commands.Cog):
                 disable_extras=True,
             )
 
-            embed.set_footer(
-                text="Powered by Hermes Engine",
-                icon_url=f"https://lairesit.sirv.com/Tortoise/{language}.png",
-            )
+            time_text = f"Executed in: {time_ms}ms"
+
+            space_req = max(0, 99 - len(time_text))
+            spacer = "\u0020" * space_req
+
+            embed.set_footer(text=f"{time_text}{spacer}Powered by Hermes Engine", icon_url=f"https://lairesit.sirv.com/Tortoise/{language}.png")
+
 
         last_promoted = self.bot.runtime.get_last_promoted(guild.id)
         now = datetime.now(timezone.utc)
@@ -243,7 +246,7 @@ class SandboxExec(commands.Cog):
             try:
                 result = await self._execute(lang, code)
             except Exception:
-                await message.channel.send("Execution request failed.")
+                await message.channel.send(embed=failure("Execution request failed."))
                 return
 
             if minimal:
