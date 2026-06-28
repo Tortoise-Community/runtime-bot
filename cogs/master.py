@@ -277,12 +277,13 @@ class MasterCog(commands.Cog):
         await self.bot.runtime.set_pro(guild_id, True)
 
         embed = info(
+                "# <:pro:1503090301001011340> Pro Access Enabled\n\n"
                 "This server has been given **Pro access**.\n\n"
                 "This is **not a paid feature**. The bot is completely free for everyone.\n"
                 "Some language execution features require elevated permissions, which is why Pro exists.\n\n"
                 "You now have access to those extended capabilities.",
                 self.bot.user,
-            "<:pro:1503090301001011340> Pro Access Enabled",
+            "",
             "Tortoise Programming Community"
         )
 

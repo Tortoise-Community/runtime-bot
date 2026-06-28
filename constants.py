@@ -1,6 +1,6 @@
 from discord import Color
 
-tortoise_guild_id = 1464188109364396169
+tortoise_guild_id = 1520372691448889364
 website_url = "https://www.tortoisecommunity.org/"
 github_repo_link = "https://github.com/Ryuga/Hermes"
 bot_repo_link = "https://github.com/Tortoise-Community/Runtime-BOT"
@@ -9,13 +9,11 @@ bot_invite_link = "https://discord.com/oauth2/authorize?client_id=78013266726512
 tortoise_community_avatar_link = "https://avatars.githubusercontent.com/u/54438042"
 
 # Log Channel IDs
-system_log_channel_id = 1464188111050375297
-bot_log_channel_id = 693090079329091615
-bot_dev_channel_id = 692851221223964822
+system_log_channel_id = 1520372692090359891
 
 # Roles
-moderator_role = 577368219875278849
-admin_role = 577196762691928065
+moderator_role = 1520372691469729959
+admin_role = 1520372691486638113
 
 # Emojis
 success_emoji = "<a:success:1479072071064490069>"
